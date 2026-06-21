@@ -15,6 +15,7 @@ resource "aws_db_instance" "main" {
   vpc_security_group_ids = [aws_security_group.rds.id]
 
   skip_final_snapshot       = true  # destroy 시 스냅샷 생성 안 함 (빠름)
+  deletion_protection       = false
   publicly_accessible       = false  # 인터넷 접근 불가
   multi_az                  = true   # 고가용성 (2개 AZ에 복제본)
   backup_retention_period   = 7      # 백업 7일 유지
