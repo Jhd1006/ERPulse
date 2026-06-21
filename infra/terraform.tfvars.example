@@ -1,0 +1,26 @@
+# ===== AWS 기본 설정 =====
+aws_region = "ap-northeast-2"
+environment = "dev"
+
+# ===== VPC 설정 =====
+vpc_cidr = "10.0.0.0/16"
+
+# ===== EKS 클러스터 설정 =====
+cluster_name = "erpulse-cluster"
+cluster_version = "1.29"
+
+# ===== EKS 워커 노드 설정 =====
+node_group_desired_size = 2
+node_group_max_size     = 4
+node_instance_type      = "t3.medium"
+
+# ===== RDS PostgreSQL 설정 =====
+db_name                = "erpulse"
+db_username            = "postgres"
+db_password            = "CHANGE_ME"  # 로컬에서 변경
+db_allocated_storage   = 20
+db_instance_class      = "db.t3.micro"
+
+# ===== ECR 설정 =====
+ecr_repository_name       = "erpulse-api"
+ecr_image_tag_mutability  = "MUTABLE"
