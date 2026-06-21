@@ -37,7 +37,7 @@ variable "cluster_name" {
 variable "cluster_version" {
   description = "Kubernetes version"
   type        = string
-  default     = "1.28"
+  default     = "1.36"
 }
 
 # ========================= EKS 워커 노드 설정 =========================
