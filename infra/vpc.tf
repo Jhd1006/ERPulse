@@ -171,8 +171,6 @@ resource "aws_security_group" "rds" {
   description = "Security group for RDS"
   vpc_id      = aws_vpc.main.id
 
-  force_destroy = true  # ← 오타 수정: force_destory → force_destroy
-
   ingress {
     from_port       = 5432
     to_port         = 5432
