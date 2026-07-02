@@ -60,11 +60,12 @@ async def sync_to_db(db: AsyncSession) -> int:
     items = await fetch_er_list()
 
     for item in items:
+        tel = item.get("dutyTel1")
         stmt = insert(Hospital).values(
             hpid=item.get("hpid"),
             dutyName=item.get("dutyName"),
             dutyAddr=item.get("dutyAddr"),
-            dutyTel1=item.get("dutyTel1"),
+            dutyTel1=str(tel) if tel is not None else None,
             hvec=item.get("hvec"),
             hvoc=item.get("hvoc"),
         ).on_conflict_do_update(
@@ -72,7 +73,7 @@ async def sync_to_db(db: AsyncSession) -> int:
             set_={
                 "dutyName": item.get("dutyName"),
                 "dutyAddr": item.get("dutyAddr"),
-                "dutyTel1": item.get("dutyTel1"),
+                "dutyTel1": str(tel) if tel is not None else None,
                 "hvec": item.get("hvec"),
                 "hvoc": item.get("hvoc"),
                 "updated_at": func.now(),
