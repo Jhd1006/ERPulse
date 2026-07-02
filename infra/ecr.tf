@@ -4,6 +4,7 @@
 resource "aws_ecr_repository" "main" {
   name                 = var.ecr_repository_name
   image_tag_mutability = var.ecr_image_tag_mutability
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true  # 이미지 푸시 시 보안 스캔
