@@ -1,7 +1,7 @@
 markdown# ERPulse 진행 사항
 
-**마지막 업데이트:** 2026-07-02  
-**상태:** Terraform 인프라 구축 완료 → FastAPI 앱 개발 시작
+**마지막 업데이트:** 2026-07-03  
+**상태:** Phase 3 완료 (FastAPI 앱 + Docker 이미지 빌드 + ECR 푸시) → GitHub Actions CI 구성 시작
 
 ---
 
@@ -49,19 +49,19 @@ erpulse-api/
 └── .env.example
 
 #### 작업 순서
-- [ ] FastAPI 기본 뼈대 (라우터, 헬스체크, 설정 구조)
-- [ ] PostgreSQL 연결 (모델 + 마이그레이션)
-- [ ] 공공 응급의료 API 연동 (데이터 수집)
-- [ ] Redis Fallback 로직
-- [ ] Dockerfile
-- [ ] docker-compose로 로컬 테스트 (PostgreSQL + Redis)
+- [x] FastAPI 기본 뼈대 (라우터, 헬스체크, 설정 구조)
+- [x] PostgreSQL 연결 (모델 + 마이그레이션, Alembic)
+- [x] 공공 응급의료 API 연동 (데이터 수집)
+- [x] Redis Fallback 로직
+- [x] Dockerfile
+- [x] docker-compose로 로컬 테스트 (PostgreSQL + Redis)
 
 ---
 
 ## 📋 이후 단계 (Phase 3 완료 후)
 
-1. **Docker 이미지 빌드 + ECR 푸시**
-2. **GitHub Actions CI 구성** (테스트 → 빌드 → ECR 푸시 → manifest repo 업데이트)
+1. **Docker 이미지 빌드 + ECR 푸시** ✓
+2. **GitHub Actions CI 구성** (테스트 → 빌드 → ECR 푸시 → manifest repo 업데이트) ← 다음 단계
 3. **ArgoCD CD 구성** (GitOps)
 4. **모니터링** (Prometheus + Grafana + Alertmanager + Slack)
 5. **고가용성 검증 시나리오 실행**
