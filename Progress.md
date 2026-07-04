@@ -1,7 +1,7 @@
 markdown# ERPulse 진행 사항
 
-**마지막 업데이트:** 2026-07-03  
-**상태:** Phase 3 완료 (FastAPI 앱 + Docker 이미지 빌드 + ECR 푸시) → GitHub Actions CI 구성 시작
+**마지막 업데이트:** 2026-07-04  
+**상태:** GitHub Actions CI 구성 완료 (테스트 + OIDC 기반 ECR 푸시) → ArgoCD CD 구성 시작
 
 ---
 
@@ -61,8 +61,8 @@ erpulse-api/
 ## 📋 이후 단계 (Phase 3 완료 후)
 
 1. **Docker 이미지 빌드 + ECR 푸시** ✓
-2. **GitHub Actions CI 구성** (테스트 → 빌드 → ECR 푸시 → manifest repo 업데이트) ← 다음 단계
-3. **ArgoCD CD 구성** (GitOps)
+2. **GitHub Actions CI 구성** (테스트 → 빌드 → ECR 푸시, OIDC 인증) ✓
+3. **ArgoCD CD 구성** (GitOps, manifest repo 이미지 태그 업데이트 포함) ← 다음 단계
 4. **모니터링** (Prometheus + Grafana + Alertmanager + Slack)
 5. **고가용성 검증 시나리오 실행**
 
