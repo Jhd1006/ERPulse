@@ -15,7 +15,23 @@ env:
   ECR_REPOSITORY: erpulse-api
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'api/**'
+              - '.github/workflows/ci.yml'
+
   test:
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -31,6 +47,7 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
+          
 
     defaults:
       run:
@@ -52,8 +69,9 @@ jobs:
         run: python -m pytest tests/ -v
 
   build-and-push:
-    needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [changes, test]
+    if: needs.changes.outputs.api == 'true' && github.ref == 'refs/heads/main' && github.event_name == 'push'
+
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
