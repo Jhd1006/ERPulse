@@ -122,3 +122,11 @@ resource "aws_iam_openid_connect_provider" "eks" {
     Name = "erpulse-oidc"
   }
 }
+
+# ===== Metrics Server (HPA를 위한 CPU/메모리 메트릭 수집) =====
+resource "aws_eks_addon" "metrics_server" {
+  cluster_name = aws_eks_cluster.main.name
+  addon_name   = "metrics-server"
+
+  depends_on = [aws_eks_node_group.main]
+}
