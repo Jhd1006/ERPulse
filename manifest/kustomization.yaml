@@ -7,7 +7,6 @@ resources:
   - service.yaml
   - hpa.yaml
   - cronjob.yaml
-  - secret.yaml
 
 images:
   - name: 236510207573.dkr.ecr.ap-northeast-2.amazonaws.com/erpulse-api
