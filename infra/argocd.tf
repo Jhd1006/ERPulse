@@ -40,3 +40,17 @@ resource "kubectl_manifest" "erpulse_api_app" {
 
   depends_on = [helm_release.argocd]
 }
+
+resource "null_resource" "delete_loadbalancer_svc" {
+    triggers = {
+      cluster_name = aws_eks_cluster.main.name
+      region       = var.aws_region
+    }
+
+    provisioner "local-exec" {
+      when    = destroy
+      command = "aws eks update-kubeconfig --name ${self.triggers.cluster_name} --region ${self.triggers.region} && kubectl delete svc erpulse-api --ignore-not-found=true"
+    }
+
+    depends_on = [kubectl_manifest.erpulse_api_app]
+  }
