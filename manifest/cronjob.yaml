@@ -1,0 +1,17 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: erpulse-collector
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          containers:
+            - name: collector
+              image: curlimages/curl:8.10.1
+              command: ["curl", "-X", "POST", "-f", "http://erpulse-api/hospitals/collect"]
+          restartPolicy: OnFailure

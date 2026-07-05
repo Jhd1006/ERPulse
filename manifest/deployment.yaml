@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: erpulse-api
+  labels:
+    app: erpulse-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: erpulse-api
+  template:
+    metadata:
+      labels:
+        app: erpulse-api
+    spec:
+      containers:
+        - name: erpulse-api
+          image: 236510207573.dkr.ecr.ap-northeast-2.amazonaws.com/erpulse-api:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: erpulse-api-config
+            - secretRef:
+                name: erpulse-api-secret
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20

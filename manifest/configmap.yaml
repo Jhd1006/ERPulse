@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: erpulse-api-config
+data:
+  PUBLIC_API_BASE_URL: "https://apis.data.go.kr/B552657/ErmctInfoInqireService"
+  REDIS_TTL: "900"
