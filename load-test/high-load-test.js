@@ -3,16 +3,16 @@ import { sleep } from 'k6';
 
 export const options = {
   stages: [
-    { duration: '30s', target: 20 },
-    { duration: '1m', target: 50 },
-    { duration: '2m', target: 100 },
-    { duration: '1m', target: 0 },
+    { duration: '20s', target: 15 },
+    { duration: '40s', target: 30 },
+    { duration: '40s', target: 30 },
+    { duration: '20s', target: 0 },
   ],
 };
 
 const BASE_URL = 'http://aa7e9695d841b4764ae84b33e4613913-606579759.ap-northeast-2.elb.amazonaws.com';
 
 export default function () {
-  http.get(`${BASE_URL}/cpu/stress`);
+  http.get(`${BASE_URL}/hospitals/`);
   sleep(0.1);
 }
