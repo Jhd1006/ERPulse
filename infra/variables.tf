@@ -122,3 +122,10 @@ variable "ecr_image_tag_mutability" {
   type        = string
   default     = "MUTABLE"
 }
+
+# ========================= AlertManager용 Slack URL  =========================
+variable "slack_webhook_url" {
+  description = "Slack Incoming Webhook URL for Alertmanager notifications"
+  type        = string
+  sensitive   = true
+}
