@@ -5,7 +5,7 @@ metadata:
   labels:
     app: erpulse-api
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   selector:
     app: erpulse-api
   ports:
