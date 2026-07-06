@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: erpulse-api
-          image: 236510207573.dkr.ecr.ap-northeast-2.amazonaws.com/erpulse-api:8ab5ee60e11137a69672f0c94eb764b4ed8739e8
+          image: 236510207573.dkr.ecr.ap-northeast-2.amazonaws.com/erpulse-api:latest
           ports:
             - containerPort: 8000
           envFrom:
