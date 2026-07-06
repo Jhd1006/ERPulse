@@ -5,11 +5,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   id-token: write
-  contents: read
-
+  contents: write
 env:
   AWS_REGION: ap-northeast-2
   ECR_REPOSITORY: erpulse-api
@@ -18,7 +18,7 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      api: ${{ steps.filter.outputs.api }}
+      api: ${{ steps.filter.outputs.api == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -70,8 +70,7 @@ jobs:
 
   build-and-push:
     needs: [changes, test]
-    if: needs.changes.outputs.api == 'true' && github.ref == 'refs/heads/main' && github.event_name == 'push'
-
+    if: needs.changes.outputs.api == 'true' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
