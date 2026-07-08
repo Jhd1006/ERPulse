@@ -9,7 +9,7 @@ export const options = {
   ],
 };
 
-const BASE_URL = 'http://aa7e9695d841b4764ae84b33e4613913-606579759.ap-northeast-2.elb.amazonaws.com';
+const BASE_URL = 'http://a8ec4099aaa854dbdba109fda0ab4fb3-1852957901.ap-northeast-2.elb.amazonaws.com';
 
 export default function () {
   http.get(`${BASE_URL}/hospitals/`);

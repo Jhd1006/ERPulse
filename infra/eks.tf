@@ -97,8 +97,11 @@ resource "aws_eks_node_group" "main" {
   update_config {
     max_unavailable = 1
   }
+  
   tags = {
-    Name = "erpulse-node-group"
+    Name                                                = "erpulse-node-group"
+    "k8s.io/cluster-autoscaler/${var.cluster_name}"      = "owned"
+    "k8s.io/cluster-autoscaler/enabled"                  = "true"
   }
 
   depends_on = [

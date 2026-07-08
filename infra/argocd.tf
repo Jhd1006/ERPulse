@@ -36,6 +36,11 @@ resource "kubectl_manifest" "erpulse_api_app" {
         automated:
           prune: true
           selfHeal: true
+      ignoreDifferences:
+        - group: apps
+          kind: Deployment
+          jsonPointers:
+            - /spec/replicas
   YAML
 
   depends_on = [helm_release.argocd]
