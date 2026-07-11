@@ -24,3 +24,6 @@ db_instance_class      = "db.t3.micro"
 # ===== ECR 설정 =====
 ecr_repository_name       = "erpulse-api"
 ecr_image_tag_mutability  = "MUTABLE"
+
+# ===== api key 설정 =====
+public_api_key = "CHANGE_ME"  # data.go.kr에서 발급받은 키
