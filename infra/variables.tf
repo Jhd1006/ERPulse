@@ -129,3 +129,10 @@ variable "slack_webhook_url" {
   type        = string
   sensitive   = true
 }
+
+# ========================= 인증용 API Key  =========================
+variable "public_api_key" {
+  description = "공공데이터포털(data.go.kr) 응급의료정보 API 인증키"
+  type        = string
+  sensitive   = true
+}
