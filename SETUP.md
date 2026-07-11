@@ -36,10 +36,11 @@ cp terraform.tfvars.example terraform.tfvars
 
 - `db_password` — RDS 마스터 비밀번호 (8자 이상)
 - `slack_webhook_url` — Alertmanager 알림용 Slack Incoming Webhook URL (필수 변수라 값이 없으면 apply가 실패합니다. Slack 알림이 필요 없다면 더미 URL이라도 넣어두세요)
+- `public_api_key` — 아래 안내 참고
 
 > **참고**: `terraform.tfvars.example`의 `cluster_version`이 `1.29`로 돼 있는데, `variables.tf`의 기본값과 실제 배포 버전은 `1.36`입니다. apply 전에 원하는 버전으로 맞춰두세요.
 
-### PUBLIC_API_KEY (data.go.kr 공공데이터포털)
+### public_api_key (data.go.kr 공공데이터포털)
 
 `api`가 호출하는 응급의료정보 API(`ErmctInfoInqireService`)는 공공데이터포털 인증키가 필요합니다.
 
@@ -47,7 +48,7 @@ cp terraform.tfvars.example terraform.tfvars
 2. "국립중앙의료원_전국 응급의료기관 정보 조회 서비스" 검색
 3. 활용신청 (자동승인이면 즉시, 아니면 심사 후 승인)
 4. 마이페이지 → 개발계정 상세보기에서 **일반 인증키(Decoding)** 확인
-5. 이 값을 4단계의 k8s Secret에 `PUBLIC_API_KEY`로 등록
+5. 이 값을 `terraform.tfvars`의 `public_api_key`에 입력
 
 ### Terraform state 관련 참고
 
@@ -62,6 +63,8 @@ terraform apply
 ```
 
 VPC, EKS 클러스터, 노드 그룹, RDS, ECR, ArgoCD(Helm), Cluster Autoscaler, kube-prometheus-stack까지 한 번에 생성됩니다. 완료까지 15~20분 정도 걸립니다.
+
+`infra/secret.tf`가 RDS 정보(`aws_db_instance.main`의 address/port)와 2단계에서 채운 `public_api_key`를 조합해서 **`erpulse-api-secret` k8s Secret까지 이 apply 한 번으로 같이 생성**합니다. 예전엔 apply 끝나고 RDS 엔드포인트를 복사해서 Secret을 손으로 만들어야 했는데, 이제 그 단계가 필요 없습니다.
 
 apply가 끝나면 출력되는 `github_actions_role_arn` 값을 기록해두세요 (다음 단계에서 사용).
 
@@ -80,39 +83,7 @@ aws eks update-kubeconfig --name erpulse-cluster --region ap-northeast-2
 kubectl get nodes
 ```
 
-## 6. Kubernetes Secret 수동 적용
-
-`manifest/secret.yaml`은 실제 값이 담기기 때문에 git에 커밋하지 않고(`.gitignore`에 등록됨) 수동으로 클러스터에 적용해야 합니다. `manifest/examples/secret.example.yaml`을 참고해서 값을 채우세요.
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: erpulse-api-secret
-type: Opaque
-stringData:
-  DATABASE_URL: "postgresql+asyncpg://<db_username>:<db_password>@<rds-endpoint>:5432/erpulse"
-  REDIS_URL: "redis://redis:6379"
-  PUBLIC_API_KEY: "<2단계에서 발급받은 키>"
-```
-
-RDS 엔드포인트는 `terraform output`(또는 AWS 콘솔의 RDS 인스턴스)에서 확인할 수 있습니다.
-
-```bash
-kubectl apply -f manifest/secret.yaml
-```
-
-## 7. DB 마이그레이션 (Alembic)
-
-RDS에 스키마가 아직 없는 상태이므로, API 파드가 뜬 뒤(또는 뜨기 전이라도 DB에 직접 접속 가능하면) 마이그레이션을 적용해야 합니다.
-
-```bash
-kubectl exec -it deploy/erpulse-api -- alembic upgrade head
-```
-
-> 파드가 아직 없다면 8단계로 먼저 이미지를 배포한 뒤 이 단계를 진행하세요.
-
-## 8. 최초 이미지 빌드 (수동 트리거 필수)
+## 6. 최초 이미지 빌드 (수동 트리거 필수)
 
 CI는 `api/**` 경로에 변경이 있어야만 자동으로 빌드/푸시합니다. 이 레포를 처음 fork한 시점에는 `api/` 변경이 없으므로 **자동으로 이미지가 만들어지지 않습니다.** GitHub Actions 탭에서 수동으로 한 번 실행해줘야 합니다.
 
@@ -123,7 +94,7 @@ CI는 `api/**` 경로에 변경이 있어야만 자동으로 빌드/푸시합니
 - ECR에 새 이미지가 푸시되고
 - `manifest/kustomization.yaml`의 `newTag`를 갱신하는 커밋이 자동으로 push됩니다
 
-## 9. ArgoCD 배포 확인
+## 7. ArgoCD 배포 확인
 
 ArgoCD는 git을 주기적으로 폴링합니다(기본 3분 간격). 새 커밋을 감지하면 자동 동기화됩니다.
 
@@ -138,7 +109,14 @@ kubectl get pods
 kubectl annotate application erpulse-api -n argocd argocd.argoproj.io/refresh=hard --overwrite
 ```
 
-## 10. 로컬에서 API만 띄워보기 (선택)
+DB 마이그레이션(`manifest/migrate-job.yaml`)은 ArgoCD PreSync Hook으로 자동 실행됩니다 — Deployment가 갱신되기 직전에 먼저 돌아갑니다. 별도로 확인하고 싶다면:
+
+```bash
+kubectl get jobs
+kubectl logs job/erpulse-migrate
+```
+
+## 8. 로컬에서 API만 띄워보기 (선택)
 
 AWS 인프라 전체 없이 API 코드만 로컬에서 개발/테스트하려면:
 
@@ -155,7 +133,7 @@ python -m pip install -r requirements.txt -r requirements-dev.txt
 python -m pytest tests/ -v
 ```
 
-## 11. 정리 (비용 방지)
+## 9. 정리 (비용 방지)
 
 다 확인했으면 AWS 과금을 막기 위해 리소스를 정리하세요.
 
@@ -170,6 +148,7 @@ ArgoCD가 만든 LoadBalancer 타입 Service는 Terraform이 직접 관리하지
 
 ## 문제가 생겼다면
 
-- **파드가 `ImagePullBackOff`**: ECR에 해당 태그의 이미지가 실제로 있는지 확인 (`aws ecr describe-images --repository-name erpulse-api`). 없다면 8단계를 다시 실행하세요.
+- **파드가 `ImagePullBackOff`**: ECR에 해당 태그의 이미지가 실제로 있는지 확인 (`aws ecr describe-images --repository-name erpulse-api`). 없다면 6단계를 다시 실행하세요.
 - **GitHub Actions가 AWS 인증 실패**: 1단계의 `github_oidc.tf` repo 경로와 4단계의 `AWS_ROLE_ARN` secret 값을 다시 확인하세요.
 - **ArgoCD가 `Degraded`인데 파드는 정상**: `kubectl describe application erpulse-api -n argocd`로 실제 원인을 확인하세요. 이미지 문제가 아니라 헬스체크(`/health`) 응답 지연일 수도 있습니다.
+- **마이그레이션 Job이 실패/멈춤**: `kubectl logs job/erpulse-migrate`로 원인 확인. `erpulse-api-secret`에 `DATABASE_URL`이 제대로 들어갔는지(`kubectl get secret erpulse-api-secret -o yaml`)도 함께 확인하세요.
