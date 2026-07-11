@@ -28,7 +28,7 @@ ERPulse
 ## 빠른 시작
 
 전체 AWS 인프라를 처음부터 구성하고 배포까지 재현하려면 **[SETUP.md](./SETUP.md)** 를 따라가세요.
-Terraform apply만으로는 끝나지 않고, GitHub Secret 등록·DB 마이그레이션·최초 이미지 빌드 등 몇 단계가 더 필요합니다.
+Terraform apply만으로는 끝나지 않고, GitHub Secret 등록·최초 이미지 빌드 등 몇 단계가 더 필요합니다
 
 로컬에서 API 코드만 띄워서 개발하려면 `api/` 디렉터리의 `docker-compose.yml`, `.env.example`을 참고하세요.
 
