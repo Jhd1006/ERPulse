@@ -36,6 +36,12 @@ resource "kubectl_manifest" "erpulse_api_app" {
         automated:
           prune: true
           selfHeal: true
+        retry:
+          limit: 5
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 5m
       ignoreDifferences:
         - group: apps
           kind: Deployment
@@ -59,3 +65,4 @@ resource "null_resource" "delete_loadbalancer_svc" {
 
     depends_on = [kubectl_manifest.erpulse_api_app]
   }
+
