@@ -15,6 +15,5 @@ spec:
           image: 236510207573.dkr.ecr.ap-northeast-2.amazonaws.com/erpulse-api:latest
           command: ["alembic", "upgrade", "head"]
           envFrom:
-            - configMapRef: { name: erpulse-api-config }
             - secretRef: { name: erpulse-api-secret }
       restartPolicy: Never
