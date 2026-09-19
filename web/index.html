@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ERPulse - 가까운 응급실 찾기</title>
+<style>
+  body { font-family: sans-serif; max-width: 480px; margin: 40px auto; padding: 0 16px; }
+  button { padding: 12px 20px; font-size: 16px; cursor: pointer; }
+  #status { margin: 12px 0; color: #666; }
+  .hospital { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+  .hospital h3 { margin: 0 0 6px; }
+  .hospital .meta { color: #555; font-size: 14px; }
+</style>
+</head>
+<body>
+  <h1>가까운 응급실 찾기</h1>
+  <button id="searchBtn">내 위치로 검색</button>
+  <div id="status"></div>
+  <div id="results"></div>
+
+<script>
+const API_BASE = "http://ab0f0f54a4eb247d9b99806683c98ac1-647535385.ap-northeast-2.elb.amazonaws.com";
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+document.getElementById("searchBtn").addEventListener("click", () => {
+  const status = document.getElementById("status");
+  const results = document.getElementById("results");
+  results.innerHTML = "";
+  status.textContent = "위치 확인 중...";
+
+  if (!navigator.geolocation) {
+    status.textContent = "이 브라우저는 위치 정보를 지원하지 않아요.";
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    const { latitude, longitude } = pos.coords;
+    status.textContent = "가까운 응급실 조회 중...";
+
+    try {
+      const res = await fetch(`${API_BASE}/hospitals/nearest?lat=${latitude}&lng=${longitude}&limit=5`);
+      const hospitals = await res.json();
+
+      if (hospitals.length === 0) {
+        status.textContent = "가용 병상이 있는 응급실을 찾지 못했어요.";
+        return;
+      }
+
+      status.textContent = `${hospitals.length}곳 찾음`;
+      results.innerHTML = hospitals.map(h => {
+        const dist = haversineKm(latitude, longitude, h.lat, h.lng).toFixed(1);
+        return `
+          <div class="hospital">
+            <h3>${h.dutyName}</h3>
+            <div class="meta">${h.dutyAddr ?? ""}</div>
+            <div class="meta">${h.dutyTel1 ?? "-"} · 약 ${dist}km · 가용병상 ${h.hvec}개</div>
+          </div>`;
+      }).join("");
+    } catch (e) {
+      status.textContent = "조회 실패: " + e.message;
+    }
+  }, () => {
+    status.textContent = "위치 권한을 허용해주세요.";
+  });
+});
+</script>
+</body>
+</html>
