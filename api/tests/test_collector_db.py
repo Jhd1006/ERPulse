@@ -58,18 +58,45 @@ async def test_sync_to_db_inserts_new_hospital(db_session, monkeypatch):
     assert hospital.dutyTel1 == "21234567"
 
 
+async def test_sync_to_db_inserts_new_hospital(db_session, monkeypatch):
+    fake_items = [{
+        "hpid": TEST_HPID,
+        "dutyName": "최초등록병원",
+        "dutyAddr": "서울시 A구",
+        "dutyTel1": 21234567,
+    }]
+    fake_realtime = [{"hpid": TEST_HPID, "hvec": 5, "hvoc": 2}]
+    monkeypatch.setattr(
+        "app.services.collector.fetch_er_list",
+        AsyncMock(return_value=fake_items),
+    )
+    monkeypatch.setattr(
+        "app.services.collector.fetch_er_realtime",
+        AsyncMock(return_value=fake_realtime),
+    )
+
+    count = await sync_to_db(db_session)
+    assert count == 1
+    result = await db_session.execute(select(Hospital).where(Hospital.hpid == TEST_HPID))
+    hospital = result.scalar_one()
+    assert hospital.dutyName == "최초등록병원"
+    assert hospital.dutyTel1 == "21234567"
+    assert hospital.hvec == 5
+
 async def test_sync_to_db_upserts_existing_hospital(db_session, monkeypatch):
     first_batch = [{
         "hpid": TEST_HPID,
         "dutyName": "최초등록병원",
         "dutyAddr": "서울시 A구",
         "dutyTel1": "02-1111-1111",
-        "hvec": 5,
-        "hvoc": 2,
     }]
     monkeypatch.setattr(
         "app.services.collector.fetch_er_list",
         AsyncMock(return_value=first_batch),
+    )
+    monkeypatch.setattr(
+        "app.services.collector.fetch_er_realtime",
+        AsyncMock(return_value=[{"hpid": TEST_HPID, "hvec": 5, "hvoc": 2}]),
     )
     await sync_to_db(db_session)
 
@@ -78,12 +105,14 @@ async def test_sync_to_db_upserts_existing_hospital(db_session, monkeypatch):
         "dutyName": "이름변경병원",
         "dutyAddr": "서울시 A구",
         "dutyTel1": "02-1111-1111",
-        "hvec": 1,
-        "hvoc": 0,
     }]
     monkeypatch.setattr(
         "app.services.collector.fetch_er_list",
         AsyncMock(return_value=updated_batch),
+    )
+    monkeypatch.setattr(
+        "app.services.collector.fetch_er_realtime",
+        AsyncMock(return_value=[{"hpid": TEST_HPID, "hvec": 1, "hvoc": 0}]),
     )
     count = await sync_to_db(db_session)
 
