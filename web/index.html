@@ -144,15 +144,6 @@
 <script>
 const API_BASE = "http://ab0f0f54a4eb247d9b99806683c98ac1-647535385.ap-northeast-2.elb.amazonaws.com";
 
-function haversineKm(lat1, lng1, lat2, lng2) {
-  const R = 6371;
-  const toRad = d => d * Math.PI / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
-  return 2 * R * Math.asin(Math.sqrt(a));
-}
-
 const btn = document.getElementById("searchBtn");
 const status = document.getElementById("status");
 const results = document.getElementById("results");
@@ -184,7 +175,6 @@ btn.addEventListener("click", () => {
 
       status.textContent = `${hospitals.length}곳 찾았어요`;
       results.innerHTML = hospitals.map((h, i) => {
-        const dist = haversineKm(latitude, longitude, h.lat, h.lng).toFixed(1);
         return `
           <div class="hospital">
             <div class="rank">${i + 1}</div>
@@ -192,7 +182,7 @@ btn.addEventListener("click", () => {
             <div class="meta">${h.dutyAddr ?? ""}</div>
             <div class="meta">${h.dutyTel1 ?? "-"}</div>
             <div class="meta" style="margin-top:8px;">
-              <span class="dist">약 ${dist}km</span>
+              <span class="dist">약 ${h.distance_km}km</span>
               <span class="bed">가용병상 ${h.hvec}개</span>
             </div>
           </div>`;

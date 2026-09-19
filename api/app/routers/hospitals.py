@@ -54,8 +54,16 @@ async def nearest_hospitals(
         )
     )
     candidates = result.scalars().all()
-    candidates.sort(key=lambda h: _haversine_km(lat, lng, h.lat, h.lng))
-    return candidates[:limit]
+    with_distance = [
+        (h, round(_haversine_km(lat, lng, h.lat, h.lng), 2)) for h in candidates
+    ]
+    with_distance.sort(key=lambda pair: pair[1])
+    return [
+        HospitalResponse.model_validate(h, from_attributes=True).model_copy(
+            update={"distance_km": dist}
+        )
+        for h, dist in with_distance[:limit]
+    ]
 
 
 @router.get("/{hpid}", response_model=HospitalResponse)
