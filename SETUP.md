@@ -116,7 +116,17 @@ kubectl get jobs
 kubectl logs job/erpulse-migrate
 ```
 
-## 8. 로컬에서 API만 띄워보기 (선택)
+## 8. 검색 페이지(`web/index.html`) API 주소 갱신
+
+`web/index.html`은 GPS 기반으로 가까운 응급실을 찾아주는 정적 페이지로, 빌드 없이 브라우저에서 파일을 직접 열어 사용합니다. 내부의 `API_BASE` 상수가 LoadBalancer 주소를 하드코딩하고 있어서, **`terraform apply`를 다시 실행할 때마다(특히 9단계 `destroy` 후 재생성 시) 주소가 바뀌고 이 값도 같이 갱신해야 합니다.**
+
+```bash
+kubectl get svc erpulse-api -n default
+```
+
+`EXTERNAL-IP` 열의 값을 `web/index.html`의 `API_BASE` 줄에 그대로 넣어주세요. 갱신 안 하고 열면 "조회 실패: Failed to fetch"로 뜨는데, 이게 그 증상입니다.
+
+## 9. 로컬에서 API만 띄워보기 (선택)
 
 AWS 인프라 전체 없이 API 코드만 로컬에서 개발/테스트하려면:
 
@@ -133,7 +143,7 @@ python -m pip install -r requirements.txt -r requirements-dev.txt
 python -m pytest tests/ -v
 ```
 
-## 9. 정리 (비용 방지)
+## 10. 정리 (비용 방지)
 
 다 확인했으면 AWS 과금을 막기 위해 리소스를 정리하세요.
 
@@ -152,3 +162,4 @@ ArgoCD가 만든 LoadBalancer 타입 Service는 Terraform이 직접 관리하지
 - **GitHub Actions가 AWS 인증 실패**: 1단계의 `github_oidc.tf` repo 경로와 4단계의 `AWS_ROLE_ARN` secret 값을 다시 확인하세요.
 - **ArgoCD가 `Degraded`인데 파드는 정상**: `kubectl describe application erpulse-api -n argocd`로 실제 원인을 확인하세요. 이미지 문제가 아니라 헬스체크(`/health`) 응답 지연일 수도 있습니다.
 - **마이그레이션 Job이 실패/멈춤**: `kubectl logs job/erpulse-migrate`로 원인 확인. `erpulse-api-secret`에 `DATABASE_URL`이 제대로 들어갔는지(`kubectl get secret erpulse-api-secret -o yaml`)도 함께 확인하세요.
+- **검색 페이지에서 "조회 실패: Failed to fetch"**: `web/index.html`의 `API_BASE`가 예전 LoadBalancer 주소를 가리키고 있을 가능성이 큽니다. 8단계 참고해서 `kubectl get svc erpulse-api`로 현재 주소를 다시 확인하세요.
