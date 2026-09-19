@@ -68,6 +68,8 @@ async def sync_to_db(db: AsyncSession) -> int:
             dutyTel1=str(tel) if tel is not None else None,
             hvec=item.get("hvec"),
             hvoc=item.get("hvoc"),
+            lat=item.get("wgs84Lat"),
+            lng=item.get("wgs84Lon"),
         ).on_conflict_do_update(
             index_elements=["hpid"],
             set_={
@@ -76,6 +78,8 @@ async def sync_to_db(db: AsyncSession) -> int:
                 "dutyTel1": str(tel) if tel is not None else None,
                 "hvec": item.get("hvec"),
                 "hvoc": item.get("hvoc"),
+                "lat": item.get("wgs84Lat"),
+                "lng": item.get("wgs84Lon"),
                 "updated_at": func.now(),
             }
         )

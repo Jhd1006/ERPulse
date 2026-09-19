@@ -9,6 +9,8 @@ class HospitalBase(BaseModel):
     dutyTel1: str | None = None
     hvec: int | None = None
     hvoc: int | None = None
+    lat: float | None = None
+    lng: float | None = None
 
 
 class HospitalResponse(HospitalBase):

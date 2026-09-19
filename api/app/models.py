@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import String, Integer, DateTime, func
+from sqlalchemy import String, Integer, Float, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column
 from .database import Base
 
@@ -14,6 +14,8 @@ class Hospital(Base):
     dutyTel1: Mapped[str | None] = mapped_column(String(20))
     hvec: Mapped[int | None] = mapped_column(Integer)   # 응급실 가용 병상 수
     hvoc: Mapped[int | None] = mapped_column(Integer)   # 수술실 가용 수
+    lat: Mapped[float | None] = mapped_column(Float)
+    lng: Mapped[float | None] = mapped_column(Float)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
     )
