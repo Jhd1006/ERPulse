@@ -182,7 +182,7 @@ btn.addEventListener("click", () => {
             <div class="meta">${h.dutyAddr ?? ""}</div>
             <div class="meta">${h.dutyTel1 ?? "-"}</div>
             <div class="meta" style="margin-top:8px;">
-              <span class="dist">약 ${h.distance_km}km</span>
+              <span class="dist">${h.duration_min != null ? `차량소요시간 ${h.duration_min}분 (약 ${h.distance_km}km)` : `약 ${h.distance_km}km`}</span>
               <span class="bed">가용병상 ${h.hvec}개</span>
             </div>
           </div>`;
