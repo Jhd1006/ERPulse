@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379"
     PUBLIC_API_KEY: str
     PUBLIC_API_BASE_URL: str = "https://apis.data.go.kr/B552657/ErmctInfoInqireService"
+    KAKAO_REST_API_KEY: str
     REDIS_TTL: int = 900  # 15분
 
 

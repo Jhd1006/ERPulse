@@ -12,6 +12,7 @@ class HospitalBase(BaseModel):
     lat: float | None = None
     lng: float | None = None
     distance_km: float | None = None
+    duration_min: float | None = None
 
 
 class HospitalResponse(HospitalBase):

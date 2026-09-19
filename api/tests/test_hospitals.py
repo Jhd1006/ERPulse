@@ -121,7 +121,7 @@ def test_haversine_km_known_distance():
     assert 0.9 < dist < 1.4
 
 
-def test_nearest_hospitals_sorted_by_distance_and_limited():
+def test_nearest_hospitals_sorted_by_distance_and_limited(monkeypatch):
     origin = (37.4979, 127.0276)  # 강남역
     near = make_hospital(hpid="NEAR", lat=37.4985, lng=127.0280, hvec=3)
     far = make_hospital(hpid="FAR", lat=37.6, lng=127.2, hvec=2)
@@ -129,6 +129,10 @@ def test_nearest_hospitals_sorted_by_distance_and_limited():
     fake_db = AsyncMock()
     fake_db.execute.return_value = FakeResult(items=[far, near])  # 일부러 먼 것부터
     app.dependency_overrides[get_db] = lambda: fake_db
+    monkeypatch.setattr(
+        "app.routers.hospitals.rank_by_duration",
+        AsyncMock(side_effect=lambda lat, lng, hs: [(h, None) for h in hs]),
+    )
 
     response = client.get(f"/hospitals/nearest?lat={origin[0]}&lng={origin[1]}&limit=1")
 

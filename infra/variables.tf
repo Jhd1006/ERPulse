@@ -136,3 +136,10 @@ variable "public_api_key" {
   type        = string
   sensitive   = true
 }
+
+# ========================= 카카오모빌리티 API Key  =========================
+variable "kakao_rest_api_key" {
+  description = "카카오모빌리티 길찾기 API REST 키"
+  type        = string
+  sensitive   = true
+}

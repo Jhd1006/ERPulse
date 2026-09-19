@@ -11,6 +11,7 @@ from ..schemas import HospitalResponse
 from ..redis_client import get_redis
 from ..services.collector import fetch_er_realtime, sync_to_db
 from ..services.fallback import get_with_fallback
+from ..services.directions import rank_by_duration
 
 router = APIRouter(prefix="/hospitals", tags=["hospitals"])
 
@@ -47,7 +48,8 @@ def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 async def nearest_hospitals(
     lat: float, lng: float, limit: int = 5, db: AsyncSession = Depends(get_db)
 ):
-    """가용 병상이 있는 응급실을 좌표 기준 가까운 순으로 조회 (결정론적 haversine 계산)"""
+    """가용 병상이 있는 응급실을 실제 이동시간 기준으로 조회
+    (1차: haversine으로 후보 추림 -> 2차: 카카오 길찾기로 재정렬)"""
     result = await db.execute(
         select(Hospital).where(
             Hospital.lat.is_not(None), Hospital.lng.is_not(None), Hospital.hvec > 0
@@ -58,11 +60,19 @@ async def nearest_hospitals(
         (h, round(_haversine_km(lat, lng, h.lat, h.lng), 2)) for h in candidates
     ]
     with_distance.sort(key=lambda pair: pair[1])
+    shortlist = with_distance[:limit]
+    distance_by_hpid = {h.hpid: dist for h, dist in shortlist}
+
+    ranked = await rank_by_duration(lat, lng, [h for h, _ in shortlist])
+
     return [
         HospitalResponse.model_validate(h, from_attributes=True).model_copy(
-            update={"distance_km": dist}
+            update={
+                "distance_km": distance_by_hpid[h.hpid],
+                "duration_min": round(duration / 60, 1) if duration is not None else None,
+            }
         )
-        for h, dist in with_distance[:limit]
+        for h, duration in ranked
     ]
 
 
