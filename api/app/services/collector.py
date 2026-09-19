@@ -16,7 +16,7 @@ async def fetch_er_list() -> list[dict]:
     params = {
         "serviceKey": settings.PUBLIC_API_KEY,
         "pageNo": 1,
-        "numOfRows": 200,
+        "numOfRows": 1000,
         "_type": "json",
     }
     async with httpx.AsyncClient(timeout=10.0) as client:
@@ -39,7 +39,7 @@ async def fetch_er_realtime() -> list[dict]:
     params = {
         "serviceKey": settings.PUBLIC_API_KEY,
         "pageNo": 1,
-        "numOfRows": 200,
+        "numOfRows": 1000,
         "_type": "json",
     }
     async with httpx.AsyncClient(timeout=10.0) as client:
