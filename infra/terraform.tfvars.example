@@ -26,4 +26,8 @@ ecr_repository_name       = "erpulse-api"
 ecr_image_tag_mutability  = "MUTABLE"
 
 # ===== api key 설정 =====
-public_api_key = "CHANGE_ME"  # data.go.kr에서 발급받은 키
+public_api_key     = "CHANGE_ME"  # data.go.kr에서 발급받은 키
+kakao_rest_api_key = "CHANGE_ME"  # 카카오 디벨로퍼스(developers.kakao.com)에서 발급받은 REST API 키
+
+# ===== 알림 설정 =====
+slack_webhook_url = "CHANGE_ME"  # Alertmanager -> Slack 알림용. 필수 변수라 값이 없으면 apply 실패. 알림 안 쓸 거면 더미 URL이라도 입력

@@ -9,6 +9,25 @@
 | 응급실 목록/상세 조회 | `GET /hospitals` | 전국 응급실 목록 및 상세 정보 조회 |
 | 실시간 병상 조회 | `GET /hospitals/realtime` | 실시간 가용 병상 조회, Redis 캐시 fallback 적용 |
 | 데이터 수집 | `POST /hospitals/collect` | 공공데이터포털(data.go.kr) API 연동해 병원 데이터 수집·적재, CronJob이 5분 주기로 자동 호출 |
+| 가까운 응급실 검색 | `GET /hospitals/nearest` | 좌표 기준 가용 병상이 있는 응급실 조회. 1차로 haversine 직선거리로 상위 후보를 추리고(결정론적, DB 내 계산), 2차로 그 후보에 한해 카카오모빌리티 길찾기 API로 실제 차량 소요시간을 조회해 재정렬. API 실패 시 직선거리 순으로 자동 폴백 |
+
+## 데이터 모델
+
+`hospitals` 테이블 하나로 관리합니다 (공공데이터 응급의료기관 정보 + 좌표를 함께 저장).
+
+| 컬럼 | 타입 | 설명 |
+|---|---|---|
+| `id` | Integer (PK) | 내부 식별자 |
+| `hpid` | String, unique | 공공데이터 응급의료기관 코드 |
+| `dutyName` | String | 병원명 |
+| `dutyAddr` | String, nullable | 주소 |
+| `dutyTel1` | String, nullable | 대표 전화번호 |
+| `hvec` | Integer, nullable | 응급실 가용 병상 수 (실시간 API에서 수집) |
+| `hvoc` | Integer, nullable | 수술실 가용 수 (실시간 API에서 수집) |
+| `lat` / `lng` | Float, nullable | 좌표 (목록 API의 wgs84Lat/wgs84Lon, 별도 지오코딩 불필요) |
+| `updated_at` | DateTime | 마지막 동기화 시각 |
+
+스키마 변경 이력은 `api/alembic/versions/`에서 확인할 수 있습니다.
 
 ## 아키텍처
 
@@ -43,6 +62,7 @@
 ```
 ERPulse
 ├── api/          FastAPI 소스코드
+├── web/          정적 검색 UI (GPS 기반 가까운 응급실 찾기, 빌드 없이 브라우저에서 바로 실행)
 ├── manifest/     Kubernetes 배포 매니페스트 (ArgoCD가 감시하는 GitOps 대상)
 ├── infra/        Terraform 인프라 코드 (VPC/EKS/RDS/ECR/ArgoCD/모니터링)
 └── load-test/    k6 부하테스트 스크립트
@@ -62,6 +82,7 @@ ERPulse
 | Scaling | HPA(CPU 70%) + Cluster Autoscaler 이중 오토스케일링 |
 | Monitoring | Prometheus, Grafana, Alertmanager, Slack |
 | Testing | pytest, k6 |
+| 외부 API | 공공데이터포털(data.go.kr) 응급의료정보, 카카오모빌리티 길찾기(Directions) |
 
 ## 빠른 시작
 
@@ -69,6 +90,8 @@ ERPulse
 `terraform apply`만으로는 끝나지 않고, GitHub Secret 등록·최초 이미지 빌드 등 몇 단계가 더 필요합니다.
 
 로컬에서 API 코드만 띄워서 개발하려면 `api/` 디렉터리의 `docker-compose.yml`, `.env.example`을 참고하세요.
+
+검색 UI(`web/index.html`)는 빌드 과정 없이 브라우저로 파일을 직접 열면 바로 동작합니다. 단, 내부 `API_BASE`가 배포된 LoadBalancer 주소를 가리켜야 하므로 SETUP.md 8단계를 참고하세요.
 
 ## 고가용성 검증
 

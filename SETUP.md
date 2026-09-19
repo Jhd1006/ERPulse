@@ -37,8 +37,7 @@ cp terraform.tfvars.example terraform.tfvars
 - `db_password` — RDS 마스터 비밀번호 (8자 이상)
 - `slack_webhook_url` — Alertmanager 알림용 Slack Incoming Webhook URL (필수 변수라 값이 없으면 apply가 실패합니다. Slack 알림이 필요 없다면 더미 URL이라도 넣어두세요)
 - `public_api_key` — 아래 안내 참고
-
-> **참고**: `terraform.tfvars.example`의 `cluster_version`이 `1.29`로 돼 있는데, `variables.tf`의 기본값과 실제 배포 버전은 `1.36`입니다. apply 전에 원하는 버전으로 맞춰두세요.
+- `kakao_rest_api_key` — 아래 안내 참고
 
 ### public_api_key (data.go.kr 공공데이터포털)
 
@@ -50,9 +49,17 @@ cp terraform.tfvars.example terraform.tfvars
 4. 마이페이지 → 개발계정 상세보기에서 **일반 인증키(Decoding)** 확인
 5. 이 값을 `terraform.tfvars`의 `public_api_key`에 입력
 
-### Terraform state 관련 참고
+### kakao_rest_api_key (카카오모빌리티 길찾기 API)
 
-이 프로젝트는 원격 backend(S3 등)를 설정하지 않았습니다 — `terraform.tfstate`는 `apply`를 실행한 로컬 머신에만 남습니다. 혼자 운영하는 포트폴리오 프로젝트라 의도적으로 이렇게 뒀습니다. 팀으로 협업한다면 S3 backend 추가를 고려하세요.
+`GET /hospitals/nearest`가 실제 차량 소요시간을 조회할 때 쓰는 키입니다. 카카오모빌리티 길찾기(Directions) API는 카카오 디벨로퍼스 앱의 REST API 키를 그대로 사용하며, 별도 승인 절차 없이 발급 즉시 사용 가능합니다(무료 쿼터 내).
+
+1. [developers.kakao.com](https://developers.kakao.com) 회원가입/로그인
+2. 내 애플리케이션 → 애플리케이션 추가하기 (앱 이름/회사명/카테고리 입력, 카테고리는 "지도/내비게이션" 권장)
+3. 생성된 앱 → 앱 키 → **REST API 키** 확인
+4. 이 값을 `terraform.tfvars`의 `kakao_rest_api_key`에 입력
+
+키가 없거나 API 호출이 실패해도 서비스는 죽지 않습니다 — `/hospitals/nearest`가 직선거리(haversine) 순서로 자동 폴백합니다.
+
 
 ## 3. 인프라 프로비저닝
 
