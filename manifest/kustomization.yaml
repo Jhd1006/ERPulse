@@ -13,4 +13,4 @@ resources:
 
 images:
   - name: 236510207573.dkr.ecr.ap-northeast-2.amazonaws.com/erpulse-api
-    newTag: 29df4cea557e642b961dfff2f14291a1c4ede162
+    newTag: 66407182ebe0802d9b43ac02627cbb5a8d6528b5
