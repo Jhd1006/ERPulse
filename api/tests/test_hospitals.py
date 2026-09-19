@@ -1,5 +1,6 @@
 from datetime import datetime
 from unittest.mock import AsyncMock
+from app.routers.hospitals import _haversine_km
 
 import pytest
 from fastapi.testclient import TestClient
@@ -113,3 +114,25 @@ def test_realtime_uses_fallback(monkeypatch):
     body = response.json()
     assert body["from_cache"] is True
     assert body["items"] == [{"hpid": "A001", "hvec": 2}]
+
+def test_haversine_km_known_distance():
+    # 강남역 -> 강남차병원, 실제 API 응답 기준 약 1.17km
+    dist = _haversine_km(37.4979, 127.0276, 37.506800025850865, 127.03466865188072)
+    assert 0.9 < dist < 1.4
+
+
+def test_nearest_hospitals_sorted_by_distance_and_limited():
+    origin = (37.4979, 127.0276)  # 강남역
+    near = make_hospital(hpid="NEAR", lat=37.4985, lng=127.0280, hvec=3)
+    far = make_hospital(hpid="FAR", lat=37.6, lng=127.2, hvec=2)
+
+    fake_db = AsyncMock()
+    fake_db.execute.return_value = FakeResult(items=[far, near])  # 일부러 먼 것부터
+    app.dependency_overrides[get_db] = lambda: fake_db
+
+    response = client.get(f"/hospitals/nearest?lat={origin[0]}&lng={origin[1]}&limit=1")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["hpid"] == "NEAR"
