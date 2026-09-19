@@ -55,24 +55,35 @@ async def fetch_er_realtime() -> list[dict]:
     )
     return items if isinstance(items, list) else [items]
 
+# 문자열로 받아올 경우 대비
 def _to_float(v) -> float | None:
     try:
         return float(v)
     except (TypeError, ValueError):
         return None
     
+# 문자열로 받아올 경우 대비
+def _to_int(v) -> int | None:
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return None
+    
 async def sync_to_db(db: AsyncSession) -> int:
     items = await fetch_er_list()
+    realtime = await fetch_er_realtime()
+    realtime_by_hpid = {r.get("hpid"): r for r in realtime}
 
     for item in items:
+        rt = realtime_by_hpid.get(item.get("hpid"), {})
         tel = item.get("dutyTel1")
         stmt = insert(Hospital).values(
             hpid=item.get("hpid"),
             dutyName=item.get("dutyName"),
             dutyAddr=item.get("dutyAddr"),
             dutyTel1=str(tel) if tel is not None else None,
-            hvec=item.get("hvec"),
-            hvoc=item.get("hvoc"),
+            hvec=_to_int(rt.get("hvec")),
+            hvoc=_to_int(rt.get("hvoc")),
             lat=_to_float(item.get("wgs84Lat")),
             lng=_to_float(item.get("wgs84Lon")),
         ).on_conflict_do_update(
@@ -81,8 +92,8 @@ async def sync_to_db(db: AsyncSession) -> int:
                 "dutyName": item.get("dutyName"),
                 "dutyAddr": item.get("dutyAddr"),
                 "dutyTel1": str(tel) if tel is not None else None,
-                "hvec": item.get("hvec"),
-                "hvoc": item.get("hvoc"),
+                "hvec": _to_int(rt.get("hvec")),
+                "hvoc": _to_int(rt.get("hvoc")),
                 "lat": _to_float(item.get("wgs84Lat")),
                 "lng": _to_float(item.get("wgs84Lon")),
                 "updated_at": func.now(),
