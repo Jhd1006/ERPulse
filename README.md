@@ -3,8 +3,9 @@
 응급의료기관의 실시간 병상 현황을 제공하고, 공공데이터 기반 좌표 계산과 카카오모빌리티 API 연동으로 실제 차량 이동시간까지 고려해 가장 가까운 가용 응급실을 찾아주는 API 서비스이자, AWS EKS 위에 GitOps 배포 파이프라인과 오토스케일링을 처음부터 끝까지 직접 설계·구축한 인프라 프로젝트입니다.
 
 ## 화면
+<img width="437" height="692" alt="image" src="https://github.com/user-attachments/assets/b643374c-ff92-47d8-b3b1-dbf4bac0d871" /> 
 
-![검색 화면](./web/screenshot.png)
+
 
 ## 핵심 기능
 
