@@ -55,7 +55,12 @@ async def fetch_er_realtime() -> list[dict]:
     )
     return items if isinstance(items, list) else [items]
 
-
+def _to_float(v) -> float | None:
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+    
 async def sync_to_db(db: AsyncSession) -> int:
     items = await fetch_er_list()
 
@@ -68,8 +73,8 @@ async def sync_to_db(db: AsyncSession) -> int:
             dutyTel1=str(tel) if tel is not None else None,
             hvec=item.get("hvec"),
             hvoc=item.get("hvoc"),
-            lat=item.get("wgs84Lat"),
-            lng=item.get("wgs84Lon"),
+            lat=_to_float(item.get("wgs84Lat")),
+            lng=_to_float(item.get("wgs84Lon")),
         ).on_conflict_do_update(
             index_elements=["hpid"],
             set_={
@@ -78,8 +83,8 @@ async def sync_to_db(db: AsyncSession) -> int:
                 "dutyTel1": str(tel) if tel is not None else None,
                 "hvec": item.get("hvec"),
                 "hvoc": item.get("hvoc"),
-                "lat": item.get("wgs84Lat"),
-                "lng": item.get("wgs84Lon"),
+                "lat": _to_float(item.get("wgs84Lat")),
+                "lng": _to_float(item.get("wgs84Lon")),
                 "updated_at": func.now(),
             }
         )
