@@ -7,37 +7,42 @@
 
 ## 0. 사전 요구사항
 
-- AWS 계정 (IAM 사용자에 `AdministratorAccess` 권한 — 최소 권한으로 좁히려면 EKS/VPC/RDS/ECR/IAM 관련 정책 필요)
-- Terraform >= 1.0
+- AWS 계정 (IAM 사용자에 `AdministratorAccess` 권한 — 최소 권한으로 좁히려면 EKS/VPC/RDS/ECR/IAM
+관련 정책 필요)                                                                                  - Terraform >= 1.0
 - AWS CLI (자격증명 설정 완료: `aws configure`)
 - kubectl
 - 자신의 GitHub 계정으로 이 레포를 fork
 
 ## 1. fork 시 반드시 바꿔야 하는 하드코딩 값
 
-원본 레포(`Jhd1006/ERPulse`)를 기준으로 아래 3곳에 계정/레포 경로가 고정돼 있습니다. fork한 레포에서는 이 값들을 자기 것으로 바꿔야 GitHub Actions와 ArgoCD가 정상 동작합니다.
-
+원본 레포(`Jhd1006/ERPulse`)를 기준으로 아래 3곳에 계정/레포 경로가 고정돼 있습니다. fork한
+레포에서는 이 값들을 자기 것으로 바꿔야 GitHub Actions와 ArgoCD가 정상 동작합니다.          
 | 파일 | 위치 | 바꿀 값 |
 |---|---|---|
-| `infra/github_oidc.tf` | `values = ["repo:Jhd1006/ERPulse:ref:refs/heads/main"]` | 본인 `github계정/레포명` |
-| `infra/argocd.tf` | `repoURL: https://github.com/Jhd1006/ERPulse` | 본인 fork 주소 |
-| `manifest/kustomization.yaml` | `images[0].name`의 계정 ID `236510207573` | 본인 AWS 계정 ID (ECR 레지스트리) |
+| `infra/persistent/github_oidc.tf` | `values = ["repo:Jhd1006/ERPulse:ref:refs/heads/main"]` |
+본인 `github계정/레포명` |
+| `infra/cluster/argocd.tf` | `repoURL        = "https://github.com/Jhd1006/ERPulse"` | 본인 fork
+주소 |
+| `manifest/kustomization.yaml` | `images[0].name`의 계정 ID `236510207573` | 본인 AWS 계정 ID
+(ECR 레지스트리) |
 
-`manifest/kustomization.yaml`의 `newTag` 값은 지금 값 그대로 둬도 됩니다 — 6단계에서 CI가 자동으로 갱신합니다.
-
-## 2. Terraform 변수 준비
+`manifest/kustomization.yaml`의 `newTag` 값은 지금 값 그대로 둬도 됩니다 — 6단계에서 CI가
+자동으로 갱신합니다.
+                                                                                                 ## 2. Terraform 변수 준비
 
 ```bash
-cd infra
+cd infra/cluster
 cp terraform.tfvars.example terraform.tfvars
 ```
 
 `terraform.tfvars`에서 채워야 할 값:
-
-- `db_password` — RDS 마스터 비밀번호 (8자 이상)
-- `slack_webhook_url` — Alertmanager 알림용 Slack Incoming Webhook URL (필수 변수라 값이 없으면 apply가 실패합니다. Slack 알림이 필요 없다면 더미 URL이라도 넣어두세요)
+                                                                                            - `db_password` — RDS 마스터 비밀번호 (8자 이상)
+- `slack_webhook_url` — Alertmanager 알림용 Slack Incoming Webhook URL (필수 변수라 값이 없으면
+apply가 실패합니다. Slack 알림이 필요 없다면 더미 URL이라도 넣어두세요)
 - `public_api_key` — 아래 안내 참고
 - `kakao_rest_api_key` — 아래 안내 참고
+
+`infra/persistent`는 모든 변수에 기본값이 있어 tfvars 파일이 필요 없습니다.
 
 ### public_api_key (data.go.kr 공공데이터포털)
 
@@ -51,34 +56,50 @@ cp terraform.tfvars.example terraform.tfvars
 
 ### kakao_rest_api_key (카카오모빌리티 길찾기 API)
 
-`GET /hospitals/nearest`가 실제 차량 소요시간을 조회할 때 쓰는 키입니다. 카카오모빌리티 길찾기(Directions) API는 카카오 디벨로퍼스 앱의 REST API 키를 그대로 사용하며, 별도 승인 절차 없이 발급 즉시 사용 가능합니다(무료 쿼터 내).
+`GET /hospitals/nearest`가 실제 차량 소요시간을 조회할 때 쓰는 키입니다. 카카오모빌리티
+길찾기(Directions) API는 카카오 디벨로퍼스 앱의 REST API 키를 그대로 사용하며, 별도 승인 절차
+없이 발급 즉시 사용 가능합니다(무료 쿼터 내).
 
 1. [developers.kakao.com](https://developers.kakao.com) 회원가입/로그인
-2. 내 애플리케이션 → 애플리케이션 추가하기 (앱 이름/회사명/카테고리 입력, 카테고리는 "지도/내비게이션" 권장)
-3. 생성된 앱 → 앱 키 → **REST API 키** 확인
-4. 이 값을 `terraform.tfvars`의 `kakao_rest_api_key`에 입력
+2. 내 애플리케이션 → 애플리케이션 추가하기 (앱 이름/회사명/카테고리 입력, 카테고리는
+"지도/내비게이션" 권장)                                                                 3. 생성된 앱 → 앱 키 → **REST API 키** 확인                                                   4. 이 값을 `terraform.tfvars`의 `kakao_rest_api_key`에 입력
 
-키가 없거나 API 호출이 실패해도 서비스는 죽지 않습니다 — `/hospitals/nearest`가 직선거리(haversine) 순서로 자동 폴백합니다.
+키가 없거나 API 호출이 실패해도 서비스는 죽지 않습니다 — `/hospitals/nearest`가직선거리(haversine) 순서로 자동 폴백합니다.
 
 
 ## 3. 인프라 프로비저닝
+인프라는 두 개의 Terraform state로 나뉘어 있습니다.
+
+| 폴더 | 리소스 | 운영 방식 |
+|---|---|---|
+| `infra/persistent/` | ECR, GitHub OIDC/IAM Role | **최초 1회 apply**, destroy하지 않음 |
+| `infra/cluster/` | VPC, EKS, RDS, ArgoCD, Cluster Autoscaler, kube-prometheus-stack | 필요할 때
+apply/destroy 반복 |
+
+ECR을 클러스터와 분리해 두었기 때문에, 클러스터를 destroy해도 이미지가 남아 재생성 시 다시 빌드할
+필요가 없습니다.                                                                                 
+### 3-1. 상시 리소스 (최초 1회)
+                                                                                                  ```bashcd infra/persistent
+terraform init
+terraform apply
+```
+apply가 끝나면 출력되는 `github_actions_role_arn` 값을 기록해두세요 (4단계에서 사용).
+### 3-2. 클러스터
 
 ```bash
+cd ../cluster
 terraform init
 terraform plan
 terraform apply
 ```
 
-VPC, EKS 클러스터, 노드 그룹, RDS, ECR, ArgoCD(Helm), Cluster Autoscaler, kube-prometheus-stack까지 한 번에 생성됩니다. 완료까지 15~20분 정도 걸립니다.
-
-`infra/secret.tf`가 RDS 정보(`aws_db_instance.main`의 address/port)와 2단계에서 채운 `public_api_key`를 조합해서 **`erpulse-api-secret` k8s Secret까지 이 apply 한 번으로 같이 생성**합니다. 예전엔 apply 끝나고 RDS 엔드포인트를 복사해서 Secret을 손으로 만들어야 했는데, 이제 그 단계가 필요 없습니다.
-
-apply가 끝나면 출력되는 `github_actions_role_arn` 값을 기록해두세요 (다음 단계에서 사용).
-
+완료까지 15~20분 정도 걸립니다.                                                                  
+`infra/cluster/secret.tf`가 RDS 정보(`aws_db_instance.main`의 address/port)와 2단계에서 채운
+`public_api_key`를 조합해서 **`erpulse-api-secret` k8s Secret까지 이 apply 한 번으로 같이         생성**합니다.
 ## 4. GitHub Actions 연동
 
-CI(`​.github/workflows/ci.yml`)가 ECR에 이미지를 푸시하려면 GitHub OIDC로 발급받은 IAM Role ARN이 필요합니다.
-
+CI(`.github/workflows/ci.yml`)가 ECR에 이미지를 푸시하려면 GitHub OIDC로 발급받은 IAM Role ARN이
+필요합니다.
 1. fork한 레포 → **Settings → Secrets and variables → Actions**
 2. **New repository secret** 클릭
 3. Name: `AWS_ROLE_ARN`, Value: 3단계에서 기록한 `github_actions_role_arn` 값 입력
@@ -92,7 +113,9 @@ kubectl get nodes
 
 ## 6. 최초 이미지 빌드 (수동 트리거 필수)
 
-CI는 `api/**` 경로에 변경이 있어야만 자동으로 빌드/푸시합니다. 이 레포를 처음 fork한 시점에는 `api/` 변경이 없으므로 **자동으로 이미지가 만들어지지 않습니다.** GitHub Actions 탭에서 수동으로 한 번 실행해줘야 합니다.
+CI는 `api/**` 경로에 변경이 있어야만 자동으로 빌드/푸시합니다. 이 레포를 처음 fork한 시점에는
+`api/` 변경이 없으므로 **자동으로 이미지가 만들어지지 않습니다.** GitHub Actions 탭에서 수동으로
+한 번 실행해줘야 합니다.
 
 1. fork한 레포 → **Actions** 탭 → **CI** 워크플로우 선택
 2. **Run workflow** 버튼 → 브랜치 `main` 선택 → 실행
@@ -100,6 +123,9 @@ CI는 `api/**` 경로에 변경이 있어야만 자동으로 빌드/푸시합니
 이 실행이 끝나면:
 - ECR에 새 이미지가 푸시되고
 - `manifest/kustomization.yaml`의 `newTag`를 갱신하는 커밋이 자동으로 push됩니다
+                                                                                              
+ECR은 `persistent`에 있어서 클러스터를 다시 만들어도 이미지가 남습니다. 이 단계는 **ECR을 처음
+만들었을 때 한 번만** 하면 됩니다.
 
 ## 7. ArgoCD 배포 확인
 
@@ -110,40 +136,36 @@ kubectl get application erpulse-api -n argocd
 kubectl get pods
 ```
 
-`SYNC STATUS: Synced`, `HEALTH STATUS: Healthy`, 파드가 `Running`이면 정상입니다. 바로 확인하고 싶다면:
+`SYNC STATUS: Synced`, `HEALTH STATUS: Healthy`, 파드가 `Running`이면 정상입니다. 바로 확인하고
+싶다면:
 
 ```bash
-kubectl annotate application erpulse-api -n argocd argocd.argoproj.io/refresh=hard --overwrite
-```
-
+kubectl annotate application erpulse-api -n argocd argocd.argoproj.io/refresh=hard --overwrite```                                                                                              
 DB 마이그레이션(`manifest/migrate-job.yaml`)은 ArgoCD PreSync Hook으로 자동 실행됩니다 — Deployment가 갱신되기 직전에 먼저 돌아갑니다. 별도로 확인하고 싶다면:
 
 ```bash
-kubectl get jobs
-kubectl logs job/erpulse-migrate
+kubectl get jobs                                                                         kubectl logs job/erpulse-migrate
 ```
 
 ## 8. 검색 페이지(`web/index.html`) API 주소 갱신
 
-`web/index.html`은 GPS 기반으로 가까운 응급실을 찾아주는 정적 페이지로, 빌드 없이 브라우저에서 파일을 직접 열어 사용합니다. 내부의 `API_BASE` 상수가 LoadBalancer 주소를 하드코딩하고 있어서, **`terraform apply`를 다시 실행할 때마다(특히 9단계 `destroy` 후 재생성 시) 주소가 바뀌고 이 값도 같이 갱신해야 합니다.**
+`web/index.html`은 GPS 기반으로 가까운 응급실을 찾아주는 정적 페이지로, 빌드 없이 브라우저에서
+파일을 직접 열어 사용합니다. 내부의 `API_BASE` 상수가 LoadBalancer 주소를 하드코딩하고 있어서,
+**`terraform apply`를 다시 실행할 때마다(특히 10단계 `destroy` 후 재생성 시) 주소가 바뀌고 이
+값도 같이 갱신해야 합니다.**
+                                                                                               ```bash                                                                                        kubectl get svc erpulse-api -n default                                                        ```
 
-```bash
-kubectl get svc erpulse-api -n default
-```
-
-`EXTERNAL-IP` 열의 값을 `web/index.html`의 `API_BASE` 줄에 그대로 넣어주세요. 갱신 안 하고 열면 "조회 실패: Failed to fetch"로 뜨는데, 이게 그 증상입니다.
+`EXTERNAL-IP` 열의 값을 `web/index.html`의 `API_BASE` 줄에 `http://`를 붙여서 넣어주세요. 갱신 안
+하고 열면 "조회 실패: Failed to fetch"로 뜨는데, 이게 그 증상입니다.
 
 ## 9. 로컬에서 API만 띄워보기 (선택)
-
-AWS 인프라 전체 없이 API 코드만 로컬에서 개발/테스트하려면:
-
+                                                                                                 
+AWS 인프라 전체 없이 API 코드만 로컬에서 개발/테스트하려면:                              
 ```bash
 cd api
 cp .env.example .env   # DATABASE_URL, PUBLIC_API_KEY 등 값 채우기
-docker compose up
-```
-
-테스트 실행:
+docker compose up                                                                        ```
+                                                                                         테스트 실행:
 
 ```bash
 python -m pip install -r requirements.txt -r requirements-dev.txt
@@ -155,18 +177,22 @@ python -m pytest tests/ -v
 다 확인했으면 AWS 과금을 막기 위해 리소스를 정리하세요.
 
 ```bash
-cd infra
+cd infra/cluster
 terraform destroy
 ```
 
-ArgoCD가 만든 LoadBalancer 타입 Service는 Terraform이 직접 관리하지 않아서 먼저 지우지 않으면 VPC 삭제가 막힐 수 있는데, `argocd.tf`의 destroy-time provisioner가 `destroy` 실행 시 자동으로 해당 Service를 먼저 삭제하도록 처리되어 있습니다.
+`infra/persistent`(ECR, OIDC)는 비용이 거의 들지 않아 남겨둡니다. 프로젝트를 완전히 정리할 때만 `infra/persistent`에서도 `terraform destroy`를 실행하세요.
+
+ArgoCD가 만든 LoadBalancer 타입 Service는 Terraform이 직접 관리하지 않아서 먼저 지우지 않으면 VPC 삭제가 막힐 수 있는데, `infra/cluster/argocd.tf`의 destroy-time provisioner가 `destroy` 실행 시 자동으로 해당 Service를 먼저 삭제하도록 처리되어 있습니다.
 
 ---
 
 ## 문제가 생겼다면
 
 - **파드가 `ImagePullBackOff`**: ECR에 해당 태그의 이미지가 실제로 있는지 확인 (`aws ecr describe-images --repository-name erpulse-api`). 없다면 6단계를 다시 실행하세요.
-- **GitHub Actions가 AWS 인증 실패**: 1단계의 `github_oidc.tf` repo 경로와 4단계의 `AWS_ROLE_ARN` secret 값을 다시 확인하세요.
+- **GitHub Actions가 AWS 인증 실패**: 1단계의 `infra/persistent/github_oidc.tf` repo 경로와 4단계의 `AWS_ROLE_ARN` secret 값을 다시 확인하세요.
 - **ArgoCD가 `Degraded`인데 파드는 정상**: `kubectl describe application erpulse-api -n argocd`로 실제 원인을 확인하세요. 이미지 문제가 아니라 헬스체크(`/health`) 응답 지연일 수도 있습니다.
 - **마이그레이션 Job이 실패/멈춤**: `kubectl logs job/erpulse-migrate`로 원인 확인. `erpulse-api-secret`에 `DATABASE_URL`이 제대로 들어갔는지(`kubectl get secret erpulse-api-secret -o yaml`)도 함께 확인하세요.
-- **검색 페이지에서 "조회 실패: Failed to fetch"**: `web/index.html`의 `API_BASE`가 예전 LoadBalancer 주소를 가리키고 있을 가능성이 큽니다. 8단계 참고해서 `kubectl get svc erpulse-api`로 현재 주소를 다시 확인하세요.
+- **검색 페이지에서 "조회 실패: Failed to fetch"**: `web/index.html`의 `API_BASE`가 예전 LoadBalancer 주소를 가리키고 있거나 `http://`가 빠졌을 가능성이 큽니다. 8단계 참고해서 `kubectl get svc erpulse-api`로 현재 주소를 다시 확인하세요.
+- **새 커밋이 올라왔는데 ArgoCD가 옛 커밋으로 계속 retry**: 진행 중인 sync의 retry는 시작 시점 커밋에 고정됩니다. retry가 끝날 때까지 기다리거나 진행 중인 작업을 종료하세요.
+  `kubectl patch application erpulse-api -n argocd --type merge -p '{"status":{"operationState":{"phase":"Terminating"}}}'`

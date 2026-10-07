@@ -56,7 +56,7 @@
 4. **manifest 자동 커밋** — `kustomization.yaml`의 `newTag`를 CI가 직접 갱신
 5. **ArgoCD** — git polling(~3분 간격)으로 새 커밋 감지 후 automated sync + selfHeal
 
-- **트리거**: `api/**` 변경 시에만 자동 빌드(path filter). 인프라만 바뀐 경우엔 `workflow_dispatch`로 수동 트리거
+- **트리거**: `api/**` 변경 시에만 자동 빌드(path filter).  api/** 변경 시에만 자동 빌드(path filter). ECR을 처음 생성시 workflow_dispatch로 최초 이미지 빌드
 - **이미지 태그**: `:latest` 대신 git 커밋 SHA로 고정 — 배포 버전 추적과 git revert 롤백이 가능
 - **매니페스트 자동 갱신**: 빌드 후 CI가 `kustomization.yaml`의 `images.newTag`를 직접 커밋. kustomize의 `images` 트랜스포머가 이 값으로 모든 매니페스트의 태그를 덮어쓰므로, 이 한 줄이 실제 배포 버전의 단일 진실 소스
 - **배포**: ArgoCD가 `manifest/` 경로를 git polling(~3분 간격)으로 감지해 자동 sync — 개발자는 코드만 push하면 테스트→빌드→배포까지 자동으로 이어짐
@@ -69,7 +69,9 @@ ERPulse
 ├── api/          FastAPI 소스코드
 ├── web/          정적 검색 UI (GPS 기반 가까운 응급실 찾기, 빌드 없이 브라우저에서 바로 실행)
 ├── manifest/     Kubernetes 배포 매니페스트 (ArgoCD가 감시하는 GitOps 대상)
-├── infra/        Terraform 인프라 코드 (VPC/EKS/RDS/ECR/ArgoCD/모니터링)
+├── infra/
+│   ├── persistent/   상시 유지 리소스 (ECR, GitHub OIDC/IAM Role) — 최초 1회 apply
+│   └── cluster/      재생성 리소스 (VPC/EKS/RDS/ArgoCD/모니터링) — apply/destroy 반복 
 └── load-test/    k6 부하테스트 스크립트
 ```
 
@@ -80,7 +82,7 @@ ERPulse
 | Backend | FastAPI, SQLAlchemy(asyncio), Alembic |
 | Database | RDS PostgreSQL |
 | Cache | Redis |
-| IaC | Terraform (VPC/EKS/RDS/ECR/IAM 단일 apply) |
+| IaC | Terraform (상시 리소스와 클러스터 state 분리, 클러스터 재생성은 apply 한 번) |
 | Orchestration | EKS, Deployment/Service/HPA/CronJob |
 | CI | GitHub Actions (OIDC 인증, paths-filter로 불필요한 빌드 스킵) |
 | CD | ArgoCD (GitOps, kustomize 이미지 태그 자동 갱신) |
