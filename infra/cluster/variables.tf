@@ -108,21 +108,6 @@ variable "db_instance_class" {
   default     = "db.t3.micro"
 }
 
-# ========================= ECR 설정 =========================
-
-variable "ecr_repository_name" {
-  description = "ECR repository name"
-  type        = string
-  default     = "erpulse-api"
-}
-
-# MUTABLE : 이미지 태그 덮어쓰기 가능 ("latest"로 사용)
-variable "ecr_image_tag_mutability" {
-  description = "Whether to allow image tag overwrite"
-  type        = string
-  default     = "MUTABLE"
-}
-
 # ========================= AlertManager용 Slack URL  =========================
 variable "slack_webhook_url" {
   description = "Slack Incoming Webhook URL for Alertmanager notifications"
