@@ -21,7 +21,7 @@ app.add_middleware(
 
 app.include_router(hospitals.router)
 app.include_router(cpu.router)
-Instrumentator().instrument(app).expose(app, include_in_schema=False)
+Instrumentator(excluded_handlers=["/metrics", "/health"]).instrument(app, latency_lowr_buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5)).expose(app, include_in_schema=False)
 
 @app.get("/health", response_model=HealthResponse, tags=["health"])
 async def health():
