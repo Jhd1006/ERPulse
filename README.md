@@ -44,7 +44,7 @@
 | erpulse-collector | 공공 API → DB 동기화 배치 | CronJob (5분 주기) |
 | erpulse-migrate | DB 스키마 마이그레이션 | ArgoCD PreSync Hook (배포 직전 자동 실행) |
 | ArgoCD | GitOps 지속 배포 | Helm 설치, git 변경 자동 감지·sync |
-| kube-prometheus-stack | 메트릭 수집·시각화·알림 | Slack Webhook 연동 |
+| kube-prometheus-stack | 클러스터 + 앱 메트릭 수집(ServiceMonitor) 및 시각화 | Slack 알림|
 | Cluster Autoscaler | 노드 레벨 오토스케일링 | IRSA 기반 |
 
 ## CI/CD 흐름
@@ -56,7 +56,7 @@
 4. **manifest 자동 커밋** — `kustomization.yaml`의 `newTag`를 CI가 직접 갱신
 5. **ArgoCD** — git polling(~3분 간격)으로 새 커밋 감지 후 automated sync + selfHeal
 
-- **트리거**: `api/**` 변경 시에만 자동 빌드(path filter).  api/** 변경 시에만 자동 빌드(path filter). ECR을 처음 생성시 workflow_dispatch로 최초 이미지 빌드
+- **트리거**: `api/**` 변경 시에만 자동 빌드(path filter).  ECR을 처음 생성시 workflow_dispatch로 최초 이미지 빌드
 - **이미지 태그**: `:latest` 대신 git 커밋 SHA로 고정 — 배포 버전 추적과 git revert 롤백이 가능
 - **매니페스트 자동 갱신**: 빌드 후 CI가 `kustomization.yaml`의 `images.newTag`를 직접 커밋. kustomize의 `images` 트랜스포머가 이 값으로 모든 매니페스트의 태그를 덮어쓰므로, 이 한 줄이 실제 배포 버전의 단일 진실 소스
 - **배포**: ArgoCD가 `manifest/` 경로를 git polling(~3분 간격)으로 감지해 자동 sync — 개발자는 코드만 push하면 테스트→빌드→배포까지 자동으로 이어짐
@@ -87,7 +87,7 @@ ERPulse
 | CI | GitHub Actions (OIDC 인증, paths-filter로 불필요한 빌드 스킵) |
 | CD | ArgoCD (GitOps, kustomize 이미지 태그 자동 갱신) |
 | Scaling | HPA(CPU 70%) + Cluster Autoscaler 이중 오토스케일링 |
-| Monitoring | Prometheus, Grafana, Alertmanager, Slack |
+| Monitoring | Prometheus, Grafana, Alertmanager, Slack, prometheus-fastapi-instrumentator |
 | Testing | pytest, k6 |
 | 외부 API | 공공데이터포털(data.go.kr) 응급의료정보, 카카오모빌리티 길찾기(Directions) |
 
@@ -99,6 +99,25 @@ ERPulse
 로컬에서 API 코드만 띄워서 개발하려면 `api/` 디렉터리의 `docker-compose.yml`, `.env.example`을 참고하세요.
 
 검색 UI(`web/index.html`)는 빌드 과정 없이 브라우저로 파일을 직접 열면 바로 동작합니다. 단, 내부 `API_BASE`가 배포된 LoadBalancer 주소를 가리켜야 하므로 SETUP.md 8단계를 참고하세요.
+
+## 모니터링
+
+- kube-prometheus-stack으로 클러스터 메트릭과 함께, FastAPI 앱 메트릭을 ServiceMonitor로 수집합니다.
+- Google SRE 골든 시그널(RED + Saturation) 기준으로 대시보드를 구성했습니다. (Rate / Errors / Duration)
+
+| 패널 | 지표 | 분류 |
+|---|---|---|
+| 초당 요청 수 / 엔드포인트별 요청 수 | `http_requests_total` | Rate |
+| 5xx 에러율 | `http_requests_total{status="5xx"}` | Errors |
+| p95 응답시간 | `http_request_duration_seconds` | Duration |
+| CPU 사용률(requests 대비) · HPA 레플리카(현재/목표/최대) | cAdvisor, kube-state-metrics | Saturation |
+
+- RED + Saturation 기준으로 대시보드 구성, HPA 목표(CPU 70%)를 기준선으로 표시해 "부하 → CPU → 스케일아웃 → 응답시간 회복" 흐름을 한 화면에서 확인
+- `/metrics`, `/health`는 수집에서 제외 (스크랩·헬스체크 요청이 요청 수와 p95를 왜곡)
+- 기본 히스토그램 버킷(0.1/0.5/1s)으로는 p95가 약 95ms 근처로 고정되는 문제가 있어 0.01~2.5s 8단계로 세분화
+- EKS 관리형 컨트롤 플레인(scheduler, controller-manager, etcd)은 기본 스크랩 대상에서 제외해 상시 오탐 알림 제거
+- Alertmanager → Slack: Pod CrashLoop, Ready 실패, HPA 최대 도달, collector Job 실패 등
+
 
 ## 고가용성 검증
 
