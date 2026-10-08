@@ -163,6 +163,8 @@ kubectl logs job/erpulse-migrate
 kubectl get svc erpulse-api -n default
 ```
 
+<img width="799" height="42" alt="image" src="https://github.com/user-attachments/assets/92bf3dd9-b0a1-487b-b322-221e18725f43" />
+
 `EXTERNAL-IP` 열의 값을 `web/index.html`의 `API_BASE` 줄에 `http://`를 붙여서 넣어주세요. 갱신 안
 하고 열면 "조회 실패: Failed to fetch"로 뜨는데, 이게 그 증상입니다.
 
