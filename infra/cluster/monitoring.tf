@@ -15,6 +15,9 @@ resource "helm_release" "kube_prometheus_stack" {
 
   values = [
     yamlencode({
+      kubeScheduler         = { enabled = false }
+      kubeControllerManager = { enabled = false }
+      kubeEtcd              = { enabled = false }
       alertmanager = {
         config = {
           route = {
