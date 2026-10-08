@@ -61,8 +61,9 @@ apply가 실패합니다. Slack 알림이 필요 없다면 더미 URL이라도 �
 없이 발급 즉시 사용 가능합니다(무료 쿼터 내).
 
 1. [developers.kakao.com](https://developers.kakao.com) 회원가입/로그인
-2. 내 애플리케이션 → 애플리케이션 추가하기 (앱 이름/회사명/카테고리 입력, 카테고리는
-"지도/내비게이션" 권장)                                                                 3. 생성된 앱 → 앱 키 → **REST API 키** 확인                                                   4. 이 값을 `terraform.tfvars`의 `kakao_rest_api_key`에 입력
+2. 내 애플리케이션 → 애플리케이션 추가하기 (앱 이름/회사명/카테고리 입력, 카테고리는 "지도/내비게이션" 권장)
+3. 생성된 앱 → 앱 키 → **REST API 키** 확인
+4. 이 값을 `terraform.tfvars`의 `kakao_rest_api_key`에 입력
 
 키가 없거나 API 호출이 실패해도 서비스는 죽지 않습니다 — `/hospitals/nearest`가직선거리(haversine) 순서로 자동 폴백합니다.
 
@@ -142,11 +143,13 @@ kubectl get pods
 싶다면:
 
 ```bash
-kubectl annotate application erpulse-api -n argocd argocd.argoproj.io/refresh=hard --overwrite```                                                                                              
+kubectl annotate application erpulse-api -n argocd argocd.argoproj.io/refresh=hard --overwrite
+```                                                                                              
 DB 마이그레이션(`manifest/migrate-job.yaml`)은 ArgoCD PreSync Hook으로 자동 실행됩니다 — Deployment가 갱신되기 직전에 먼저 돌아갑니다. 별도로 확인하고 싶다면:
 
 ```bash
-kubectl get jobs                                                                         kubectl logs job/erpulse-migrate
+kubectl get jobs
+kubectl logs job/erpulse-migrate
 ```
 
 ## 8. 검색 페이지(`web/index.html`) API 주소 갱신
@@ -155,10 +158,14 @@ kubectl get jobs                                                                
 파일을 직접 열어 사용합니다. 내부의 `API_BASE` 상수가 LoadBalancer 주소를 하드코딩하고 있어서,
 **`terraform apply`를 다시 실행할 때마다(특히 10단계 `destroy` 후 재생성 시) 주소가 바뀌고 이
 값도 같이 갱신해야 합니다.**
-                                                                                               ```bash                                                                                        kubectl get svc erpulse-api -n default                                                        ```
+                                                                                               
+```bash
+kubectl get svc erpulse-api -n default
+```
 
 `EXTERNAL-IP` 열의 값을 `web/index.html`의 `API_BASE` 줄에 `http://`를 붙여서 넣어주세요. 갱신 안
 하고 열면 "조회 실패: Failed to fetch"로 뜨는데, 이게 그 증상입니다.
+
 
 ## 9. 로컬에서 API만 띄워보기 (선택)
                                                                                                  
@@ -166,8 +173,10 @@ AWS 인프라 전체 없이 API 코드만 로컬에서 개발/테스트하려면
 ```bash
 cd api
 cp .env.example .env   # DATABASE_URL, PUBLIC_API_KEY 등 값 채우기
-docker compose up                                                                        ```
-                                                                                         테스트 실행:
+docker compose up
+ ```
+
+테스트 실행:
 
 ```bash
 python -m pip install -r requirements.txt -r requirements-dev.txt
