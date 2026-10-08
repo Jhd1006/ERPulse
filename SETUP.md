@@ -28,8 +28,8 @@
 
 `manifest/kustomization.yaml`의 `newTag` 값은 지금 값 그대로 둬도 됩니다 — 6단계에서 CI가
 자동으로 갱신합니다.
-                                                                                                 ## 2. Terraform 변수 준비
-
+                                                                                                 
+## 2. Terraform 변수 준비
 ```bash
 cd infra/cluster
 cp terraform.tfvars.example terraform.tfvars
@@ -77,13 +77,15 @@ apply가 실패합니다. Slack 알림이 필요 없다면 더미 URL이라도 �
 apply/destroy 반복 |
 
 ECR을 클러스터와 분리해 두었기 때문에, 클러스터를 destroy해도 이미지가 남아 재생성 시 다시 빌드할
-필요가 없습니다.                                                                                 
+필요가 없습니다.      
+
 ### 3-1. 상시 리소스 (최초 1회)
-                                                                                                  ```bashcd infra/persistent
+```bashcd infra/persistent                                                                                                 
 terraform init
 terraform apply
 ```
 apply가 끝나면 출력되는 `github_actions_role_arn` 값을 기록해두세요 (4단계에서 사용).
+
 ### 3-2. 클러스터
 
 ```bash
