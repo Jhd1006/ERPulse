@@ -117,11 +117,18 @@ ERPulse
 - 기본 히스토그램 버킷(0.1/0.5/1s)으로는 p95가 약 95ms 근처로 고정되는 문제가 있어 0.01~2.5s 8단계로 세분화
 - EKS 관리형 컨트롤 플레인(scheduler, controller-manager, etcd)은 기본 스크랩 대상에서 제외해 상시 오탐 알림 제거
 - Alertmanager → Slack: Pod CrashLoop, Ready 실패, HPA 최대 도달, collector Job 실패 등
+<img width="2530" height="1249" alt="image" src="https://github.com/user-attachments/assets/45395bac-f244-4847-bf18-76c81d0c8b2a" />
+<img width="1268" height="593" alt="image" src="https://github.com/user-attachments/assets/43845e71-2cfa-426a-8349-d123c3e08691" />
 
+<img width="644" height="252" alt="image" src="https://github.com/user-attachments/assets/1b05911f-3b49-42fe-a42a-d999297fae18" />
 
-## 고가용성 검증
+  ## 고가용성 검증
 
 - **부하테스트 (k6)**: 100 VU 최초 테스트에서 100% 실패 발견 → RDS 보안그룹 미스매치(EKS 노드 실제 SG 미허용) + Alembic 마이그레이션 미적용(테이블 부재) 두 가지 근본원인 규명·해결. 이후 26,368건 요청 **실패율 0%** 달성
-- **HPA + Cluster Autoscaler 연동 검증**: maxReplicas 15, k6 VU 50/10분 부하 → HPA가 2→4→8→13 replica로 스케일아웃, 노드 자동 증설까지 확인. 95,428 요청 처리, 실패율 0%, p95 570ms
+- **HPA + Cluster Autoscaler 연동 검증** (k6 VU 50 / 약 11분, maxReplicas 15)
+  - **1차 (2026-07)**: HPA가 2→4→8→13 replica로 스케일아웃, 노드 자동 증설까지 확인. 95,428 요청 처리, 실패율 0%, p95 570ms
+  - **2차 (2026-10, 앱 메트릭 계측 후 재측정)**: 약 2분 30초 만에 Pod 2→15, 노드 2→3 자동 증설. 57,480 요청 중 실패 1건(TCP 연결 리셋, 0.00%), 5xx 0건. 서버 측 p95가 스케일아웃 중 약 0.93초 → 안정 후 약 0.47초로 회복(Grafana 확인), 클라이언트 측 p95 978ms
+  - **요청 수가 줄어든 이유**: 1차 이후 공공 API 수집 누락 버그(`numOfRows` 200 제한)를 수정해 저장 병원 수가 최대 200곳 → 530곳으로 늘고 좌표 컬럼이 추가되어, `/hospitals/` 응답이 요청당 약 172KB로 커짐. 동일 VU에서 요청당 처리·전송 시간이 늘어 처리량이 감소한 것으로, 두 결과는 응답 크기가 다른 조건의 측정값
+  - **발견한 한계**: Pod별 CPU를 보니 k6의 keep-alive 연결이 스케일아웃 이전 Pod에 고정되어 새 Pod로 트래픽이 고르게 분산되지 않음. CLB/kube-proxy가 연결 단위로 분산하기 때문 → ALB(IP 타깃) 기반 요청 단위 분산이 개선 과제
 - **Pod 강제 삭제 복구**: ReplicaSet이 약 11초 만에 자동 복구
 - **노드 장애 시뮬레이션 (cordon + drain)**: t3.medium의 노드당 최대 파드 수(ENI 기반) 한도로 재스케줄이 막히는 실제 HA 갭을 발견 → Cluster Autoscaler 도입 후 동일 시나리오에서 노드 자동 증설로 정상 재스케줄되는 것까지 검증
