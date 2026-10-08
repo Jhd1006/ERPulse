@@ -12,6 +12,16 @@ resources:
   - migrate-job.yaml
   - servicemonitor.yaml
 
+configMapGenerator:
+  - name: erpulse-api-dashboard
+    namespace: monitoring
+    files:
+      - grafana-dashboard.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+      disableNameSuffixHash: true
+
 images:
   - name: 236510207573.dkr.ecr.ap-northeast-2.amazonaws.com/erpulse-api
     newTag: 11a87dc3781f2ee45e40a2aa7cda6a1799a8a438
